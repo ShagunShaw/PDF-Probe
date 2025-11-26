@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "My Extension",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["*://*/*.pdf", "*://*/*.pdf?*"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}
