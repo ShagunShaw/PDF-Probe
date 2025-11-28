@@ -40,7 +40,7 @@ def create_vector(page_url):
     docs = [Document(page_content=text) for text in chunks]
 
     vector_store = Chroma(            
-        collection_name=str(hash(page_url)),
+        collection_name="example_collection",
         embedding_function=GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     )
     vector_store.add_documents(documents=docs)
@@ -54,7 +54,7 @@ def get_response(vector_store, query):
     # Retrieve relevant documents based on a query
     retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 
-    retrieved_documents = retriever.invoke(query=query)
+    retrieved_documents = retriever.invoke(query)
 
     context_text= "\n\n".join(doc.page_content for doc in retrieved_documents)
 
@@ -77,7 +77,7 @@ def get_response(vector_store, query):
         }
     )
 
-    chatHistory.append(HumanMessage(content=final_prompt))
+    chatHistory.append(HumanMessage(content=final_prompt.text))
     answer= model.invoke(chatHistory)
     chatHistory.append(AIMessage(content=answer.content))
 

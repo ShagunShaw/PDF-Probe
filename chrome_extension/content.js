@@ -49,10 +49,6 @@ input.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://127.0.0.1:8000'  // For Development
-  : 'https://production-api.com';  // For Production (replace with your actual domain)
-
 async function sendMessage() {
   const question = input.value.trim();
   if (!question) return;
@@ -63,7 +59,7 @@ async function sendMessage() {
   addTypingIndicator();
   
   try {
-    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+    const response = await fetch(`http://127.0.0.1:8000/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,11 +69,11 @@ async function sendMessage() {
         question: question
       })
     });
-    
-    if (response.status !== 200) {
+
+    if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const data = await response.json();
     
     removeTypingIndicator();
@@ -86,7 +82,7 @@ async function sendMessage() {
     
   } catch (error) {
     removeTypingIndicator();
-    addMessage(`❌ Error: Could not connect to AI server. Make sure your Python server is running on http://localhost:8000 and the error is ${error.message}`, 'ai');
+    addMessage(`❌ Error: Could not connect to AI server. Make sure your Python server is running on http://127.0.0.1:8000 and the error is ${error.message}`, 'ai');
     console.error('API Error:', error);
   }
 }
@@ -96,7 +92,9 @@ function addMessage(text, sender) {
   msgDiv.className = `message ${sender}-message`;
   msgDiv.textContent = text;
   messages.appendChild(msgDiv);
-  messages.scrollTop = messages.scrollHeight;
+  setTimeout(() => {
+    messages.scrollTop = messages.scrollHeight;
+  }, 10);
 }
 
 function addTypingIndicator() {
@@ -110,5 +108,10 @@ function addTypingIndicator() {
 
 function removeTypingIndicator() {
   const typing = document.getElementById('typing');
-  if (typing) typing.remove();
+  if (typing) {
+    typing.remove();
+    setTimeout(() => {
+      messages.scrollTop = messages.scrollHeight;
+    }, 10);
+  }
 }

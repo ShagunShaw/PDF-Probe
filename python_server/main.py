@@ -1,76 +1,56 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-import uvicorn
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-from vectors import create_vector, get_response         # Import functions from vectors.py file
+from vectors import create_vector, get_response
 
-app = FastAPI(
-    title="PDF Probe",
-    description="Backend API for Chrome Extension",
-    version="1.0.0"
-)
+app = Flask(__name__)
+CORS(app)  # enable CORS for all domains
 
-# CORS middleware
-app.add_middleware(                 # TODO: Review CORS settings later
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-firstQuestion= True
-vector_store= None
-
-class ChatRequest(BaseModel):
-    page_url: str
-    question: str
-
-class ChatResponse(BaseModel):
-    response: str
-    status: str
-    status_code: int
+first_question = True
+vector_store = None
 
 # Routes
-@app.get("/")
-async def root():
-    return {
+@app.route("/")
+def root():
+    return jsonify({
         "message": "AI PDF Assistant API is running! 🚀",
         "status": "active"
-    }
+    })
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+@app.route("/health")
+def health_check():
+    return jsonify({"status": "healthy"})
 
-@app.post("/api/chat")
-async def chat(request: ChatRequest) -> ChatResponse:
-    global firstQuestion, vector_store
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    global first_question, vector_store
 
     try:
-        if not request.question or not request.question.strip():
-            raise HTTPException(status_code=400, detail="Question cannot be empty")
-        
-        response= ""
-        if(firstQuestion):
-            firstQuestion= False
-            vector_store= create_vector(request.page_url)
-            response= get_response(vector_store, request.question)
+        data = request.get_json()
+        page_url = data.get("page_url")
+        question = data.get("question")
+
+        if not question or not question.strip():
+            return jsonify({"error": "Question cannot be empty"}), 400
+
+        response = ""
+        if first_question:
+            first_question = False
+            vector_store = create_vector(page_url)
+            response = get_response(vector_store, question)
         else:
-            response= get_response(vector_store, request.question)
-        
-        return ChatResponse(
-            response=response,
-            status="success",
-            status_code= 200
-        )
-    
+            response = get_response(vector_store, question)
+
+        return jsonify({
+            "response": response,
+            "status": "success",
+            "status_code": 200
+        })
+
     except Exception as e:
         print(f"Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
-    print("🚀 Starting AI PDF Assistant API on http://localhost:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    app.run(host="127.0.0.1", port=8000, debug=True, threaded=True)
